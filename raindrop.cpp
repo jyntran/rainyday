@@ -24,3 +24,12 @@ int Raindrop::getX() {
 int Raindrop::getY() {
 	return y;
 }
+
+void Raindrop::setX(int new_x) {
+	x = new_x;
+}
+
+void Raindrop::setY(int new_y) {
+	y = new_y;
+}
+
