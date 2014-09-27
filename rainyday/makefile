@@ -2,7 +2,7 @@ CC=g++
 CFLAGS=-c -Wall
 LDFLAGS=-L/usr/X11R6/lib
 LIBFLAGS = -lX11 -lstdc++
-SOURCES=umbrella.cpp raindrop.cpp protege.cpp text.cpp game.cpp
+SOURCES=umbrella.cpp raindrop.cpp anthill.cpp protege.cpp text.cpp game.cpp
 OBJECTS=$(SOURCES:.cpp=.o)
 EXECUTABLE=game
 

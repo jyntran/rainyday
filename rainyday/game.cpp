@@ -20,6 +20,7 @@
 #include "xinfo.h"
 #include "umbrella.h"
 #include "raindrop.h"
+#include "anthill.h"
 #include "protege.h"
 #include "text.h"
 
@@ -51,14 +52,17 @@ string intToString(int num){
 //// Game variables
 
 Umbrella umbrella(100, 100, 50, 50);
-Protege protege(50);
+Anthill anthill(50);
 vector<Displayable *> dList;
 vector<Raindrop *> raindropList;
 
 int score = 0;
-Text uiScore(10, 10, "Score: ");
-Text uiLives(10, 20, "Lives: ");
+Text uiScore(20, 20, "Score: ");
 
+int splash = 1;
+int splashPainted = 0;
+
+int tutormode = 0;
 
 //// Initialize X and create a window
 
@@ -182,29 +186,49 @@ void repaint( XInfo &xinfo) {
 	//unsigned int width = windowInfo.width;
 
 	//// Draw into the buffer
-	//// Big black rectangle to clear the background
-	XFillRectangle(xinfo.display, xinfo.pixmap, xinfo.gc[0], 0, 0, xinfo.width, xinfo.height);
+	if (splash == 0) {
+		//// Big black rectangle to clear the background
+		XFillRectangle(xinfo.display, xinfo.pixmap, xinfo.gc[0], 0, 0, xinfo.width, xinfo.height);
 
-	//// Draw display list then delete it for next repaint
-	for (unsigned int i=0; i < dList.size(); i++) {
-		Displayable *d = dList.at(i);
-		d->paint(xinfo);
+		//// Draw display list then delete it for next repaint
+		for (unsigned int i=0; i < dList.size(); i++) {
+			Displayable *d = dList.at(i);
+			d->paint(xinfo);
+		}
+		dList.clear();
+
+		//// Draw raindrops list
+		for (unsigned int i=0; i < raindropList.size(); i++) {
+			Raindrop *r = raindropList.at(i);
+			r->paint(xinfo);
+		}
+
+		//// Draw text
+		Text uiScoreValue(100, 20, intToString(score));
+		uiScore.paint(xinfo);
+		uiScoreValue.paint(xinfo);
+
+	} else {
+		XFillRectangle(xinfo.display, xinfo.window, xinfo.gc[0], 0, 0, xinfo.width, xinfo.height);
+
+		Text uiSplashLine1(20, 20, "rainyday");
+		Text uiSplashLine2(40, 60, "Protect the anthills from drowning in the rain.");
+		Text uiSplashLine3(40, 80, "Use the mouse to control the umbrella.");
+		Text uiSplashLine4(40, 100, "If the water reaches the top of the anthills, game over.");
+		Text uiSplashLine5(40, 140, "Press B to begin.");
+		Text uiSplashLine6(40, 160, "Press T to toggle tutor grade mode.");
+		Text uiSplashLine7(40, 180, "Press Q to close the game.");
+		Text uiSplashLine8(20, 220, "Created by Jen Tran - j44tran");
+
+		uiSplashLine1.paint(xinfo);
+		uiSplashLine2.paint(xinfo);
+		uiSplashLine3.paint(xinfo);
+		uiSplashLine4.paint(xinfo);
+		uiSplashLine5.paint(xinfo);
+		uiSplashLine6.paint(xinfo);
+		uiSplashLine7.paint(xinfo);
+		uiSplashLine8.paint(xinfo);
 	}
-	dList.clear();
-
-	//// Draw raindrops list
-	for (unsigned int i=0; i < raindropList.size(); i++) {
-		Raindrop *r = raindropList.at(i);
-		r->paint(xinfo);
-	}
-
-	//// Draw text
-	Text uiScoreValue(50, 10, intToString(score));
-	Text uiLivesValue(50, 20, intToString(umbrella.getLives()));
-	uiScore.paint(xinfo);
-	uiScoreValue.paint(xinfo);
-	uiLives.paint(xinfo);
-	uiLivesValue.paint(xinfo);
 
 	//// Copy buffer to window
 	XCopyArea(xinfo.display, xinfo.pixmap, xinfo.window, xinfo.gc[0],
@@ -229,9 +253,25 @@ void handleKeyPress(XInfo &xinfo, XEvent &event) {
 		&key, 					//// workstation-independent key symbol
 		NULL );					//// pointer to a composeStatus structure (unused)
 	if (i == 1) {
-		printf("Got key press -- %c\n", text[0]);
 		if (text[0] == 'q') {
 			error("Terminating normally.");
+		}
+		if (text[0] == 'b') {
+			printf("Begin!\n");
+			splash = 0;
+		}
+		if (text[0] == 't') {
+			if (tutormode) {
+				tutormode = 0;
+				printf("Tutor mode off.\n");
+			} else {
+				tutormode = 1;
+				printf("Tutor mode on.\n");
+			}
+			for (unsigned int i=0; i < raindropList.size(); i++) {
+				Raindrop *r = raindropList.at(i);
+				r->setFallAmount(tutormode);
+			}
 		}
 	}
 }
@@ -244,28 +284,17 @@ void handleMotion(XInfo &xinfo, XEvent &event, int inside) {
 	}
 }
 
-
-void handleLives(int isMissed) {
-	if (isMissed == 1) {
-		if (umbrella.getLives() <= 0) {
-			error("You lose!\n");
-		} else {
-			printf("You lose a life! Lives: %d\n", umbrella.getLives());
-		}
-	} else {
-		if (score % 10 == 0) {
-			umbrella.incLives();
-			printf("You got a life! Lives: %d\n", umbrella.getLives());
-		}
+void handleRainLevel(XInfo &xinfo) {
+	if (anthill.getRainLevel() > anthill.getHeight()) {
+		printf("You couldn't save the ants.\nYour score: %d\n", score);
+		error("Game over.");
 	}
 }
 
-
 void handleRaindrops(XInfo &xinfo) {
 	//printf("raindropList size: %d\n", raindropList.size());
-	if (raindropList.size() < 4 && rand() % 15 == 0) {
-		Raindrop* r = new Raindrop(abs((rand() * 100) % xinfo.width), 0,
-				10);
+	if (raindropList.size() < 6 && rand() % 15 == 0) {
+		Raindrop* r = new Raindrop(abs((rand() * 100) % xinfo.width), 0, tutormode);
 		raindropList.push_back(r);
 	}
 
@@ -278,18 +307,16 @@ void handleRaindrops(XInfo &xinfo) {
 				&& r->getX() > umbrella.getX()
 				&& r->getX() < (umbrella.getX() + umbrella.getWidth())) {
 			score++;
-			printf("Caught! %d Score: %d\n", i, score);
+			//printf("Raindrop caught!\n");
 			r->setX(abs((rand() * 100) % xinfo.width));
 			r->setY(0);
-			handleLives(0);
 		} else
-		if (r->getY() > xinfo.height - 50) {
+		if (r->getY() > xinfo.height) {
 			r->setX(abs((rand() * 100) % xinfo.width));
 			r->setY(0);
-			umbrella.decLives();
-			handleLives(1);
+			anthill.incRainLevel();
+			handleRainLevel(xinfo);
 		}
-
 	}
 }
 
@@ -310,7 +337,7 @@ void handleResize(XInfo &xinfo, XEvent &event) {
 
 void handleAnimation(XInfo &xinfo, int inside) {
 	dList.push_back(&umbrella);
-	dList.push_back(&protege);
+	dList.push_back(&anthill);
 	handleRaindrops(xinfo);
 	if (!inside) {
 		umbrella.advance(umbrella.getX(), umbrella.getY(), xinfo);
@@ -332,9 +359,8 @@ void eventLoop(XInfo &xinfo) {
 	XEvent event;
 	unsigned long lastRepaint = 0;
 	int inside = 0;
-	int splash = 0;
 
-	while(splash == 0) {
+	while(true) {
 		if (XPending(xinfo.display) > 0) {
 			XNextEvent( xinfo.display, &event );
 			switch( event.type ) {
@@ -360,17 +386,23 @@ void eventLoop(XInfo &xinfo) {
 					break;
 			}
 		}
-		unsigned long currentTime = now();
-		//// Repaint when more than 1/30 seconds have passed
-		if ((currentTime - lastRepaint) >= (1000000/FPS)) {
-			usleep(1000000/FPS);
-			handleAnimation(xinfo, inside);
+
+		if (splashPainted == 0) {
 			repaint(xinfo);
-			lastRepaint = now();
-		}
-		//// Snooze when no events are left
-		if (XPending(xinfo.display) == 0) {
-			usleep((1000000/FPS) - (currentTime - lastRepaint));
+			splashPainted = 1;
+		} else if (splash == 0) {
+			unsigned long currentTime = now();
+			//// Repaint when more than 1/30 seconds have passed
+			if ((currentTime - lastRepaint) >= (1000000/FPS)) {
+				usleep(1000000/FPS);
+				handleAnimation(xinfo, inside);
+				repaint(xinfo);
+				lastRepaint = now();
+			}
+			//// Snooze when no events are left
+			if (XPending(xinfo.display) == 0) {
+				usleep((1000000/FPS) - (currentTime - lastRepaint));
+			}
 		}
 	}
 

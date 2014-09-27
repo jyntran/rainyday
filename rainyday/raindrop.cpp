@@ -2,8 +2,12 @@
 
 #include "raindrop.h"
 
-Raindrop::Raindrop(int x, int y, int fallAmount):
-	x(x), y(y), fallAmount(fallAmount) {
+Raindrop::Raindrop(int x, int y, int tutormode):
+	x(x), y(y) {
+		if (tutormode)
+			fallAmount = 2;
+		else
+			fallAmount = 10;
 }
 
 void Raindrop::paint(XInfo &xinfo) {
@@ -33,3 +37,9 @@ void Raindrop::setY(int new_y) {
 	y = new_y;
 }
 
+void Raindrop::setFallAmount(int tutormode) {
+	if (tutormode)
+		fallAmount = 2;
+	else
+		fallAmount = 10;
+}

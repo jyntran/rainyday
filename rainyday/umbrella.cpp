@@ -6,7 +6,6 @@ Umbrella::Umbrella(int x, int y, int width, int height):
 	x(x), y(y), width(width), height(height)  {
 		adv_x = x;
 		adv_y = y;
-		lives = 99999999;
 		advAmount = 30;
 }
 
@@ -52,18 +51,6 @@ int Umbrella::getWidth() {
 
 int Umbrella::getHeight() {
 	return height;
-}
-
-int Umbrella::getLives() {
-	return lives;
-}
-
-void Umbrella::incLives() {
-	lives++;
-}
-
-void Umbrella::decLives() {
-	lives--;
 }
 
 int Umbrella::getAdvAmount() {

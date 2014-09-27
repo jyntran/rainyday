@@ -15,9 +15,6 @@ class Umbrella : public Displayable {
 		int getY();
 		int getWidth();
 		int getHeight();
-		int getLives();
-		void incLives();
-		void decLives();
 		int getAdvAmount();
 
 	private:
@@ -27,7 +24,6 @@ class Umbrella : public Displayable {
 		int height;
 		int adv_x;
 		int adv_y;
-		int lives;
 		int advAmount;
 };
 
