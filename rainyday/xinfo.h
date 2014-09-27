@@ -14,7 +14,7 @@ struct XInfo {
 	Display *display;
 	int screen;
 	Window window;
-	GC gc[3];
+	GC gc[4];
 	Pixmap pixmap;		// double buffer
 	int width;		// size of window
 	int height;

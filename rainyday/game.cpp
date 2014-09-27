@@ -21,7 +21,7 @@
 #include "umbrella.h"
 #include "raindrop.h"
 #include "anthill.h"
-#include "protege.h"
+#include "cloud.h"
 #include "text.h"
 
 using namespace std;
@@ -49,10 +49,20 @@ string intToString(int num){
 }
 
 
+//// Get microseconds
+unsigned long now() {
+	timeval tv;
+	gettimeofday(&tv, NULL);
+	return tv.tv_sec * 1000000 + tv.tv_usec;
+}
+
+
+
 //// Game variables
 
 Umbrella umbrella(100, 100, 50, 50);
 Anthill anthill(50);
+Cloud cloud(0);
 vector<Displayable *> dList;
 vector<Raindrop *> raindropList;
 
@@ -111,7 +121,6 @@ void initX(int argc, char *argv[], XInfo &xinfo) {
 		argv, argc,			//// Applications command line args
 		&hints );			//// Size hints for the window
 
-	XDefineCursor(xinfo.display, xinfo.window, None);
 
 	/*
 	 * Create Graphics Contexts
@@ -133,14 +142,14 @@ void initX(int argc, char *argv[], XInfo &xinfo) {
 	XSetLineAttributes(xinfo.display, xinfo.gc[i],
 	                     1, LineSolid, CapButt, JoinRound);
 
-	//// Reverse Video - for raindrop tops
+	//// Reverse Video - dashed line for ants
 	i = 2;
 	xinfo.gc[i] = XCreateGC(xinfo.display, xinfo.window, 0, 0);
 	XSetForeground(xinfo.display, xinfo.gc[i], WhitePixel(xinfo.display, xinfo.screen));
 	XSetBackground(xinfo.display, xinfo.gc[i], BlackPixel(xinfo.display, xinfo.screen));
 	XSetFillStyle(xinfo.display, xinfo.gc[i], FillSolid);
 	XSetLineAttributes(xinfo.display, xinfo.gc[i],
-	                     1, LineSolid, CapButt, JoinMiter);
+	                     1, LineOnOffDash, CapButt, JoinMiter);
 
 	//// Create off screen buffer
 	int depth = DefaultDepth(xinfo.display, DefaultScreen(xinfo.display));
@@ -189,8 +198,8 @@ void repaint( XInfo &xinfo) {
 	if (splash == 0) {
 		//// Big black rectangle to clear the background
 		XFillRectangle(xinfo.display, xinfo.pixmap, xinfo.gc[0], 0, 0, xinfo.width, xinfo.height);
-
 		//// Draw display list then delete it for next repaint
+		//// Umbrella, Anthill
 		for (unsigned int i=0; i < dList.size(); i++) {
 			Displayable *d = dList.at(i);
 			d->paint(xinfo);
@@ -207,6 +216,7 @@ void repaint( XInfo &xinfo) {
 		Text uiScoreValue(100, 20, intToString(score));
 		uiScore.paint(xinfo);
 		uiScoreValue.paint(xinfo);
+
 
 	} else {
 		XFillRectangle(xinfo.display, xinfo.window, xinfo.gc[0], 0, 0, xinfo.width, xinfo.height);
@@ -257,7 +267,7 @@ void handleKeyPress(XInfo &xinfo, XEvent &event) {
 			error("Terminating normally.");
 		}
 		if (text[0] == 'b') {
-			printf("Begin!\n");
+			printf("Begin game.\n");
 			splash = 0;
 		}
 		if (text[0] == 't') {
@@ -268,6 +278,7 @@ void handleKeyPress(XInfo &xinfo, XEvent &event) {
 				tutormode = 1;
 				printf("Tutor mode on.\n");
 			}
+			//// Update all raindrops to appropriate speed
 			for (unsigned int i=0; i < raindropList.size(); i++) {
 				Raindrop *r = raindropList.at(i);
 				r->setFallAmount(tutormode);
@@ -292,7 +303,7 @@ void handleRainLevel(XInfo &xinfo) {
 }
 
 void handleRaindrops(XInfo &xinfo) {
-	//printf("raindropList size: %d\n", raindropList.size());
+	//// Add raindrop until there are 6 onscreen simultaneously
 	if (raindropList.size() < 6 && rand() % 15 == 0) {
 		Raindrop* r = new Raindrop(abs((rand() * 100) % xinfo.width), 0, tutormode);
 		raindropList.push_back(r);
@@ -302,16 +313,20 @@ void handleRaindrops(XInfo &xinfo) {
 		Raindrop *r = raindropList.at(i);
 		r->move();
 
+		//// Collision detection with umbrella
 		if (r->getY() > umbrella.getY()
 				&& r->getY() < (umbrella.getY() + (umbrella.getHeight() / 2))
 				&& r->getX() > umbrella.getX()
 				&& r->getX() < (umbrella.getX() + umbrella.getWidth())) {
 			score++;
 			//printf("Raindrop caught!\n");
+			//// Reassign x,y values to reuse raindrop
 			r->setX(abs((rand() * 100) % xinfo.width));
 			r->setY(0);
 		} else
-		if (r->getY() > xinfo.height) {
+		//// Collision detection with ground
+		if (r->getY() > xinfo.height - anthill.getRainLevel()) {
+			//// Reassign x,y values to reuse raindrop
 			r->setX(abs((rand() * 100) % xinfo.width));
 			r->setY(0);
 			anthill.incRainLevel();
@@ -336,6 +351,7 @@ void handleResize(XInfo &xinfo, XEvent &event) {
 
 
 void handleAnimation(XInfo &xinfo, int inside) {
+	dList.push_back(&cloud);
 	dList.push_back(&umbrella);
 	dList.push_back(&anthill);
 	handleRaindrops(xinfo);
@@ -343,14 +359,6 @@ void handleAnimation(XInfo &xinfo, int inside) {
 		umbrella.advance(umbrella.getX(), umbrella.getY(), xinfo);
 	}
 	//printf("dList size: %d\n", dList.size());
-}
-
-
-//// Get microseconds
-unsigned long now() {
-	timeval tv;
-	gettimeofday(&tv, NULL);
-	return tv.tv_sec * 1000000 + tv.tv_usec;
 }
 
 
@@ -387,22 +395,23 @@ void eventLoop(XInfo &xinfo) {
 			}
 		}
 
+		unsigned long currentTime = now();
+		//// Paint splash screen once
 		if (splashPainted == 0) {
 			repaint(xinfo);
 			splashPainted = 1;
 		} else if (splash == 0) {
-			unsigned long currentTime = now();
 			//// Repaint when more than 1/30 seconds have passed
 			if ((currentTime - lastRepaint) >= (1000000/FPS)) {
 				usleep(1000000/FPS);
 				handleAnimation(xinfo, inside);
 				repaint(xinfo);
-				lastRepaint = now();
 			}
-			//// Snooze when no events are left
-			if (XPending(xinfo.display) == 0) {
-				usleep((1000000/FPS) - (currentTime - lastRepaint));
-			}
+		}
+		lastRepaint = now();
+		//// Snooze when no events are left
+		if (XPending(xinfo.display) == 0) {
+			usleep((1000000/FPS) - (currentTime - lastRepaint));
 		}
 	}
 

@@ -11,10 +11,12 @@ class Anthill : public Displayable {
 		int getHeight();
 		int getRainLevel();
 		void incRainLevel();
+		int getAntStep();
 
 	private:
 		int height;
 		int rainLevel;
+		int antStep;
 };
 
 #endif
