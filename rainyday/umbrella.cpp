@@ -6,7 +6,7 @@ Umbrella::Umbrella(int x, int y, int width, int height):
 	x(x), y(y), width(width), height(height)  {
 		adv_x = x;
 		adv_y = y;
-		lives = 3;
+		lives = 99999999;
 		advAmount = 30;
 }
 
