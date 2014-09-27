@@ -10,7 +10,7 @@ class Umbrella : public Displayable {
 	public:
 		Umbrella(int x, int y, int width, int height);
 		void paint(XInfo &xinfo);
-		void advance(int x, int y);
+		void advance(int x, int y, XInfo &xinfo);
 		int getX();
 		int getY();
 		int getWidth();
@@ -18,6 +18,7 @@ class Umbrella : public Displayable {
 		int getLives();
 		void incLives();
 		void decLives();
+		int getAdvAmount();
 
 	private:
 		int x;
@@ -27,6 +28,7 @@ class Umbrella : public Displayable {
 		int adv_x;
 		int adv_y;
 		int lives;
+		int advAmount;
 };
 
 #endif

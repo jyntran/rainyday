@@ -1,4 +1,5 @@
 #include <iostream>
+#include <sstream>
 #include <list>
 #include <cstdlib>
 #include <vector>
@@ -34,6 +35,18 @@ const int FPS = 24;
 void error( string str ) {
   cerr << str << endl;
   exit(0);
+}
+
+
+//	Convert int to string
+
+string intToString(int num){
+	stringstream strs;
+	strs << num;
+	string temp_str = strs.str();
+//	char* char_type = (char*) temp_str.c_str();
+//	return char_type;
+	return temp_str;
 }
 
 
@@ -135,11 +148,14 @@ void initX(int argc, char *argv[], XInfo &xinfo) {
 	xinfo.height = hints.height;
 
 	XSelectInput(xinfo.display, xinfo.window,
-		ButtonPressMask | KeyPressMask |
+		KeyPressMask |
 		PointerMotionMask |
-		EnterWindowMask | LeaveWindowMask |
+//		EnterWindowMask | LeaveWindowMask |
 		ExposureMask |
 		StructureNotifyMask);  // for resize events
+
+	// turn off keyboard autorepeat
+	XAutoRepeatOff(xinfo.display);
 
 	/*
 	 * Don't paint the background -- reduce flickering
@@ -162,8 +178,8 @@ void repaint( XInfo &xinfo) {
 	//XClearWindow( xinfo.display, xinfo.window );
 
 	// get height and width of window (might have changed since last repaint)
-	XWindowAttributes windowInfo;
-	XGetWindowAttributes(xinfo.display, xinfo.window, &windowInfo);
+	// XWindowAttributes windowInfo;
+	// XGetWindowAttributes(xinfo.display, xinfo.window, &windowInfo);
 	//unsigned int height = windowInfo.height;
 	//unsigned int width = windowInfo.width;
 
@@ -184,7 +200,13 @@ void repaint( XInfo &xinfo) {
 	}
 
 	// draw text
+	Text uiScoreValue(50, 10, intToString(score));
+	Text uiLivesValue(50, 20, intToString(umbrella.getLives()));
+
 	uiScore.paint(xinfo);
+	uiScoreValue.paint(xinfo);
+	uiLives.paint(xinfo);
+	uiLivesValue.paint(xinfo);
 
 	// copy buffer to window
 	XCopyArea(xinfo.display, xinfo.pixmap, xinfo.window, xinfo.gc[0],
@@ -216,7 +238,7 @@ void handleKeyPress(XInfo &xinfo, XEvent &event) {
 		&key, 					// workstation-independent key symbol
 		NULL );					// pointer to a composeStatus structure (unused)
 	if (i == 1) {
-		//printf("Got key press -- %c\n", text[0]);
+		printf("Got key press -- %c\n", text[0]);
 		if (text[0] == 'q') {
 			error("Terminating normally.");
 		}
@@ -225,15 +247,15 @@ void handleKeyPress(XInfo &xinfo, XEvent &event) {
 
 
 void handleMotion(XInfo &xinfo, XEvent &event, int inside) {
-	if (inside) {
-		umbrella.advance(event.xbutton.x, event.xbutton.y);
+//	if (inside) {
+		umbrella.advance(event.xbutton.x, event.xbutton.y, xinfo);
 		dList.push_back(&umbrella);
-	}
+//	}
 }
 
 
 void handleRaindrops(XInfo &xinfo) {
-	if (rand() % 15 == 0) {
+	if (raindropList.size() < 5 && rand() % 15 == 0) {
 		Raindrop* r = new Raindrop(abs((rand() * 100) % xinfo.width), 0,
 				5 + (5 * floor((score / 10))));
 		raindropList.push_back(r);
@@ -302,7 +324,7 @@ void handleAnimation(XInfo &xinfo, int inside) {
 	handleRaindrops(xinfo);
 	handleCollisions(xinfo);
 	if (!inside) {
-		umbrella.advance(umbrella.getX(), umbrella.getY());
+		umbrella.advance(umbrella.getX(), umbrella.getY(), xinfo);
 	}
 }
 
@@ -328,35 +350,45 @@ void eventLoop(XInfo &xinfo) {
 		 */
 		if (XPending(xinfo.display) > 0) {
 			XNextEvent( xinfo.display, &event );
+			printf("New event: %d\n", event.type);
 			switch( event.type ) {
-				case ButtonPress:
-					handleButtonPress(xinfo, event);
-					break;
 				case KeyPress:
 					handleKeyPress(xinfo, event);
+					printf("Event: KeyPress %d\n", event.type);
 					break;
 				case MotionNotify:
 					handleMotion(xinfo, event, inside);
+					printf("Event: MotionNotify %d\n", event.type);
 					break;
-				case EnterNotify:
+/*				case EnterNotify:
 					inside = 1;
+					printf("Event: EnterNotify %d\n", event.type);
 					break;
 				case LeaveNotify:
 					inside = 0;
+					printf("Event: LeaveNotify %d\n", event.type);
+					break;
+*/				case Expose:
+					printf("Event: Expose %d\n", event.type);
 					break;
 				case ConfigureNotify:
 					handleResize(xinfo, event);
+					printf("Event: ConfigureNotify %d\n", event.type);
 					break;
 			}
 		}
-
-		unsigned long currentTime = now();
+		unsigned int currentTime = now();
 		if ((currentTime - lastRepaint) > (1000000/FPS)) {
 			handleAnimation(xinfo, inside);
 			repaint(xinfo);
 			lastRepaint = now();
 		}
+		if (XPending(xinfo.display) == 0) {
+			repaint(xinfo);
+			usleep(1000000/FPS);
+		}
 	}
+
 }
 
 

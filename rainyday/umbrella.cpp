@@ -7,6 +7,7 @@ Umbrella::Umbrella(int x, int y, int width, int height):
 		adv_x = x;
 		adv_y = y;
 		lives = 3;
+		advAmount = 30;
 }
 
 void Umbrella::paint(XInfo &xinfo) {
@@ -21,10 +22,21 @@ void Umbrella::paint(XInfo &xinfo) {
 			width/4, height/4, 180*64, 180*64);
 }
 
-void Umbrella::advance(int x, int y) {
-	adv_x = x;
-	adv_y = y;
-	}
+void Umbrella::advance(int x, int y, XInfo &xinfo) {
+	if (x > (xinfo.width - width))
+		adv_x = xinfo.width - width;
+	else if (x < 0)
+		adv_x = 0;
+	else
+		adv_x = x;
+
+	if (y > (xinfo.height - height))
+		adv_y = xinfo.height - height;
+	else if (y < 0)
+		adv_y = 0;
+	else
+		adv_y = y;
+}
 
 int Umbrella::getX() {
 	return adv_x;
@@ -52,4 +64,8 @@ void Umbrella::incLives() {
 
 void Umbrella::decLives() {
 	lives--;
+}
+
+int Umbrella::getAdvAmount() {
+	return advAmount;
 }
