@@ -21,13 +21,20 @@ void Anthill::paint(XInfo &xinfo) {
 			XDrawLine(xinfo.display, xinfo.pixmap, xinfo.gc[2],
 				0, xinfo.height - 1,
 				xinfo.width, xinfo.height - 1);
-			//// Anthill ants
+			//// Anthill ants - white
 			XDrawLine(xinfo.display, xinfo.pixmap, xinfo.gc[2],
 				xinfo.width/2 - 61, xinfo.height - 1,
 				xinfo.width/2, xinfo.height - (height + 1));
 			XDrawLine(xinfo.display, xinfo.pixmap, xinfo.gc[2],
 				xinfo.width/2, xinfo.height - (height + 1),
 				xinfo.width/2 + 61, xinfo.height - 1);
+			//// Anthill ants - black
+			XDrawLine(xinfo.display, xinfo.pixmap, xinfo.gc[3],
+				xinfo.width/2 - 20, xinfo.height - 1,
+				xinfo.width/2, xinfo.height - (height + 1));
+			XDrawLine(xinfo.display, xinfo.pixmap, xinfo.gc[3],
+				xinfo.width/2, xinfo.height - (height + 1),
+				xinfo.width/2 + 20, xinfo.height - 1);
 			//// Switch
 			antStep = 0;
 		} else {
@@ -35,50 +42,42 @@ void Anthill::paint(XInfo &xinfo) {
 			XDrawLine(xinfo.display, xinfo.pixmap, xinfo.gc[2],
 				2, xinfo.height - 1,
 				xinfo.width + 2, xinfo.height - 1);
-			//// Anthill ants alternating
+			//// Anthill ants alternating - white
 			XDrawLine(xinfo.display, xinfo.pixmap, xinfo.gc[2],
 				xinfo.width/2 - 59, xinfo.height - 3,
 				xinfo.width/2 + 2, xinfo.height - (height + 2));
 			XDrawLine(xinfo.display, xinfo.pixmap, xinfo.gc[2],
 				xinfo.width/2 - 2, xinfo.height - (height + 2),
 				xinfo.width/2 + 59, xinfo.height - 3);
+			//// Anthill ants alternating - black
+			XDrawLine(xinfo.display, xinfo.pixmap, xinfo.gc[3],
+				xinfo.width/2 - 17, xinfo.height - 4,
+				xinfo.width/2 + 3, xinfo.height - (height + 4));
+			XDrawLine(xinfo.display, xinfo.pixmap, xinfo.gc[3],
+				xinfo.width/2 - 3, xinfo.height - (height + 4),
+				xinfo.width/2 + 17, xinfo.height - 4);
 			//// Switch
 			antStep = 1;
 		}
 
 	//// Rain level
-	XFillRectangle(xinfo.display, xinfo.pixmap, xinfo.gc[0], 
-		0, xinfo.height - (rainLevel - 4),
+	XFillRectangle(xinfo.display, xinfo.pixmap, xinfo.gc[0],
+		0, xinfo.height - (rainLevel - 3),
 		xinfo.width, xinfo.height);
 
 	//// Waves
 	for (int i = 0; i < xinfo.width/100 + 100; i++) {
 		XDrawArc(xinfo.display, xinfo.pixmap, xinfo.gc[1],
-			 i*100, xinfo.height - (rainLevel + 12),
+			i*100, xinfo.height - (rainLevel + 12),
 			100, 15,
 			180*64, 180*64);
 	}
 	for (int i = 0; i < xinfo.width/100 + 100; i++) {
 		XDrawArc(xinfo.display, xinfo.pixmap, xinfo.gc[1],
-			 -50 + (i*100), xinfo.height - (rainLevel + 1),
+			-50 + (i*100), xinfo.height - (rainLevel + 1),
 			100, 15,
 			180*64, 180*64);
 	}
-
-/*
-	XFillArc(xinfo.display, xinfo.pixmap, xinfo.gc[1],
-		xinfo.width/4, xinfo.height - (rainLevel + 5),
-		75, 75,
-		0, 180*64);
-	XFillArc(xinfo.display, xinfo.pixmap, xinfo.gc[1],
-		3*xinfo.width/4, xinfo.height - (rainLevel + 5),
-		75, 75,
-		0, 180*64);
-	XFillArc(xinfo.display, xinfo.pixmap, xinfo.gc[1],
-		xinfo.width+50, xinfo.height - (rainLevel + 10),
-		100, 100,
-		0, 180*64);
-*/
 }
 
 int Anthill::getHeight() {

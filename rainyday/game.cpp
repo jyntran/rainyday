@@ -1,3 +1,10 @@
+////
+//// rainyday
+//// CS 349 Assignment 1
+//// Jen Tran - j44tran
+////
+
+
 #include <iostream>
 #include <sstream>
 #include <list>
@@ -34,8 +41,8 @@ const int FPS = 30;
 //// Function to put out a message on error exits.
 
 void error( string str ) {
-  cerr << str << endl;
-  exit(0);
+	cerr << str << endl;
+	exit(0);
 }
 
 
@@ -50,12 +57,12 @@ string intToString(int num){
 
 
 //// Get microseconds
+
 unsigned long now() {
 	timeval tv;
 	gettimeofday(&tv, NULL);
 	return tv.tv_sec * 1000000 + tv.tv_usec;
 }
-
 
 
 //// Game variables
@@ -73,6 +80,7 @@ int splash = 1;
 int splashPainted = 0;
 
 int tutormode = 0;
+
 
 //// Initialize X and create a window
 
@@ -142,11 +150,20 @@ void initX(int argc, char *argv[], XInfo &xinfo) {
 	XSetLineAttributes(xinfo.display, xinfo.gc[i],
 	                     1, LineSolid, CapButt, JoinRound);
 
-	//// Reverse Video - dashed line for ants
+	//// Reverse Video - dashed line for ants - white
 	i = 2;
 	xinfo.gc[i] = XCreateGC(xinfo.display, xinfo.window, 0, 0);
 	XSetForeground(xinfo.display, xinfo.gc[i], WhitePixel(xinfo.display, xinfo.screen));
 	XSetBackground(xinfo.display, xinfo.gc[i], BlackPixel(xinfo.display, xinfo.screen));
+	XSetFillStyle(xinfo.display, xinfo.gc[i], FillSolid);
+	XSetLineAttributes(xinfo.display, xinfo.gc[i],
+	                     1, LineOnOffDash, CapButt, JoinMiter);
+
+	//// Reverse Video - dashed line for ants - black
+	i = 3;
+	xinfo.gc[i] = XCreateGC(xinfo.display, xinfo.window, 0, 0);
+	XSetForeground(xinfo.display, xinfo.gc[i], BlackPixel(xinfo.display, xinfo.screen));
+	XSetBackground(xinfo.display, xinfo.gc[i], WhitePixel(xinfo.display, xinfo.screen));
 	XSetFillStyle(xinfo.display, xinfo.gc[i], FillSolid);
 	XSetLineAttributes(xinfo.display, xinfo.gc[i],
 	                     1, LineOnOffDash, CapButt, JoinMiter);
@@ -179,66 +196,38 @@ void initX(int argc, char *argv[], XInfo &xinfo) {
 	XMapRaised( xinfo.display, xinfo.window );
 
 	XFlush(xinfo.display);
-	//sleep(2);	//// Let server get set up before sending drawing commands
 }
 
 
 //// Function to repaint a display list
 
 void repaint( XInfo &xinfo) {
-	//XClearWindow( xinfo.display, xinfo.window );
-
 	//// Get height and width of window (might have changed since last repaint)
 	XWindowAttributes windowInfo;
 	XGetWindowAttributes(xinfo.display, xinfo.window, &windowInfo);
-	//unsigned int height = windowInfo.height;
-	//unsigned int width = windowInfo.width;
 
 	//// Draw into the buffer
-	if (splash == 0) {
-		//// Big black rectangle to clear the background
-		XFillRectangle(xinfo.display, xinfo.pixmap, xinfo.gc[0], 0, 0, xinfo.width, xinfo.height);
-		//// Draw display list then delete it for next repaint
-		//// Umbrella, Anthill
-		for (unsigned int i=0; i < dList.size(); i++) {
-			Displayable *d = dList.at(i);
-			d->paint(xinfo);
-		}
-		dList.clear();
+	//// Big black rectangle to clear the background
+	XFillRectangle(xinfo.display, xinfo.pixmap, xinfo.gc[0], 0, 0, xinfo.width, xinfo.height);
 
-		//// Draw raindrops list
-		for (unsigned int i=0; i < raindropList.size(); i++) {
-			Raindrop *r = raindropList.at(i);
-			r->paint(xinfo);
-		}
-
-		//// Draw text
-		Text uiScoreValue(100, 20, intToString(score));
-		uiScore.paint(xinfo);
-		uiScoreValue.paint(xinfo);
-
-
-	} else {
-		XFillRectangle(xinfo.display, xinfo.window, xinfo.gc[0], 0, 0, xinfo.width, xinfo.height);
-
-		Text uiSplashLine1(20, 20, "rainyday");
-		Text uiSplashLine2(40, 60, "Protect the anthills from drowning in the rain.");
-		Text uiSplashLine3(40, 80, "Use the mouse to control the umbrella.");
-		Text uiSplashLine4(40, 100, "If the water reaches the top of the anthills, game over.");
-		Text uiSplashLine5(40, 140, "Press B to begin.");
-		Text uiSplashLine6(40, 160, "Press T to toggle tutor grade mode.");
-		Text uiSplashLine7(40, 180, "Press Q to close the game.");
-		Text uiSplashLine8(20, 220, "Created by Jen Tran - j44tran");
-
-		uiSplashLine1.paint(xinfo);
-		uiSplashLine2.paint(xinfo);
-		uiSplashLine3.paint(xinfo);
-		uiSplashLine4.paint(xinfo);
-		uiSplashLine5.paint(xinfo);
-		uiSplashLine6.paint(xinfo);
-		uiSplashLine7.paint(xinfo);
-		uiSplashLine8.paint(xinfo);
+	//// Draw display list then delete it for next repaint
+	//// Umbrella, Anthill, Clouds
+	for (unsigned int i=0; i < dList.size(); i++) {
+		Displayable *d = dList.at(i);
+		d->paint(xinfo);
 	}
+	dList.clear();
+
+	//// Draw raindrops list
+	for (unsigned int i=0; i < raindropList.size(); i++) {
+		Raindrop *r = raindropList.at(i);
+		r->paint(xinfo);
+	}
+
+	//// Draw text
+	Text uiScoreValue(100, 20, intToString(score));
+	uiScore.paint(xinfo);
+	uiScoreValue.paint(xinfo);
 
 	//// Copy buffer to window
 	XCopyArea(xinfo.display, xinfo.pixmap, xinfo.window, xinfo.gc[0],
@@ -248,6 +237,48 @@ void repaint( XInfo &xinfo) {
 	XFlush( xinfo.display );
 }
 
+
+//// Function to paint the splash screen
+
+void splashPaint( XInfo &xinfo) {
+	//// Get height and width of window (might have changed since last repaint)
+	XWindowAttributes windowInfo;
+	XGetWindowAttributes(xinfo.display, xinfo.window, &windowInfo);
+
+	//// Big black rectangle to clear the background
+	XFillRectangle(xinfo.display, xinfo.pixmap, xinfo.gc[0], 0, 0, xinfo.width, xinfo.height);
+
+	//// Splash and instructions
+	Text uiSplashLine1(20, 20, "rainyday");
+	Text uiSplashLine2(40, 60, "Protect the anthills from drowning in the rain.");
+	Text uiSplashLine3(40, 80, "Use the mouse to control the umbrella.");
+	Text uiSplashLine4(40, 100, "If the water reaches the top of the anthills, game over.");
+	Text uiSplashLine5(40, 140, "Press B to begin.");
+	Text uiSplashLine6(40, 160, "Press T to toggle tutor grade mode.");
+	Text uiSplashLine7(40, 180, "Press Q to close the game.");
+	Text uiSplashLine8(20, 220, "Created by Jen Tran - j44tran");
+
+	uiSplashLine1.paint(xinfo);
+	uiSplashLine2.paint(xinfo);
+	uiSplashLine3.paint(xinfo);
+	uiSplashLine4.paint(xinfo);
+	uiSplashLine5.paint(xinfo);
+	uiSplashLine6.paint(xinfo);
+	uiSplashLine7.paint(xinfo);
+	uiSplashLine8.paint(xinfo);
+
+	//// Copy buffer to window
+	XCopyArea(xinfo.display, xinfo.pixmap, xinfo.window, xinfo.gc[0],
+			0, 0, xinfo.width, xinfo.height, //// pixmap region to copy
+			0, 0);
+
+	printf("Window loaded.\n");
+
+	XFlush( xinfo.display );
+}
+
+
+//// Handle key presses
 
 void handleKeyPress(XInfo &xinfo, XEvent &event) {
 	KeySym key;
@@ -271,13 +302,8 @@ void handleKeyPress(XInfo &xinfo, XEvent &event) {
 			splash = 0;
 		}
 		if (text[0] == 't') {
-			if (tutormode) {
-				tutormode = 0;
-				printf("Tutor mode off.\n");
-			} else {
-				tutormode = 1;
-				printf("Tutor mode on.\n");
-			}
+			tutormode = tutormode ? 0 : 1;
+			printf("Tutor mode %s.\n", tutormode ? "on" : "off");
 			//// Update all raindrops to appropriate speed
 			for (unsigned int i=0; i < raindropList.size(); i++) {
 				Raindrop *r = raindropList.at(i);
@@ -288,6 +314,8 @@ void handleKeyPress(XInfo &xinfo, XEvent &event) {
 }
 
 
+//// Handle mouse motion and umbrella position
+
 void handleMotion(XInfo &xinfo, XEvent &event, int inside) {
 	if (inside) {
 		umbrella.advance(event.xbutton.x, event.xbutton.y, xinfo);
@@ -295,12 +323,47 @@ void handleMotion(XInfo &xinfo, XEvent &event, int inside) {
 	}
 }
 
-void handleRainLevel(XInfo &xinfo) {
-	if (anthill.getRainLevel() > anthill.getHeight()) {
+
+//// Function to check whether the game is won or lost
+
+void handleWinLose(XInfo &xinfo) {
+	if (score >= 100) {
+		printf("The sun finally came out.\n");
+		printf("You are the saviour of the ants.\nYour score: %d\n", score);
+		error("Thanks for playing!");
+	} else if (anthill.getRainLevel() > anthill.getHeight()) {
 		printf("You couldn't save the ants.\nYour score: %d\n", score);
 		error("Game over.");
 	}
 }
+
+
+//// Handle collision detection for raindrops
+
+void handleRaindropCollision(XInfo &xinfo, Raindrop *r) {
+	//// Collision detection with umbrella
+	if (r->getY() > umbrella.getY()
+			&& r->getY() < (umbrella.getY() + (umbrella.getHeight() / 2))
+			&& r->getX() > umbrella.getX()
+			&& r->getX() < (umbrella.getX() + umbrella.getWidth())) {
+		score++;
+		handleWinLose(xinfo);
+		//// Reassign x,y values to reuse raindrop
+		r->setX(abs((rand() * 100) % xinfo.width));
+		r->setY(0);
+	} else
+		//// Collision detection with ground
+		if (r->getY() > xinfo.height - anthill.getRainLevel()) {
+			//// Reassign x,y values to reuse raindrop
+			r->setX(abs((rand() * 100) % xinfo.width));
+			r->setY(0);
+			anthill.incRainLevel();
+			handleWinLose(xinfo);
+		}
+}
+
+
+//// Main function to handle raindrops
 
 void handleRaindrops(XInfo &xinfo) {
 	//// Add raindrop until there are 6 onscreen simultaneously
@@ -308,30 +371,11 @@ void handleRaindrops(XInfo &xinfo) {
 		Raindrop* r = new Raindrop(abs((rand() * 100) % xinfo.width), 0, tutormode);
 		raindropList.push_back(r);
 	}
-
+	//// Iterate through each raindrop
 	for (unsigned int i=0; i < raindropList.size(); i++) {
 		Raindrop *r = raindropList.at(i);
 		r->move();
-
-		//// Collision detection with umbrella
-		if (r->getY() > umbrella.getY()
-				&& r->getY() < (umbrella.getY() + (umbrella.getHeight() / 2))
-				&& r->getX() > umbrella.getX()
-				&& r->getX() < (umbrella.getX() + umbrella.getWidth())) {
-			score++;
-			//printf("Raindrop caught!\n");
-			//// Reassign x,y values to reuse raindrop
-			r->setX(abs((rand() * 100) % xinfo.width));
-			r->setY(0);
-		} else
-		//// Collision detection with ground
-		if (r->getY() > xinfo.height - anthill.getRainLevel()) {
-			//// Reassign x,y values to reuse raindrop
-			r->setX(abs((rand() * 100) % xinfo.width));
-			r->setY(0);
-			anthill.incRainLevel();
-			handleRainLevel(xinfo);
-		}
+		handleRaindropCollision(xinfo, r);
 	}
 }
 
@@ -339,7 +383,6 @@ void handleRaindrops(XInfo &xinfo) {
 //// Update width and height when window is resized
 void handleResize(XInfo &xinfo, XEvent &event) {
 	XConfigureEvent xce = event.xconfigure;
-	//fprintf(stderr, "Handling resize  w=%d  h=%d\n", xce.width, xce.height);
 	if (xce.width != xinfo.width || xce.height != xinfo.height) {
 		XFreePixmap(xinfo.display, xinfo.pixmap);
 		int depth = DefaultDepth(xinfo.display, DefaultScreen(xinfo.display));
@@ -350,6 +393,8 @@ void handleResize(XInfo &xinfo, XEvent &event) {
 }
 
 
+//// Animation setup and calls
+
 void handleAnimation(XInfo &xinfo, int inside) {
 	dList.push_back(&cloud);
 	dList.push_back(&umbrella);
@@ -358,9 +403,10 @@ void handleAnimation(XInfo &xinfo, int inside) {
 	if (!inside) {
 		umbrella.advance(umbrella.getX(), umbrella.getY(), xinfo);
 	}
-	//printf("dList size: %d\n", dList.size());
 }
 
+
+//// Main event loop
 
 void eventLoop(XInfo &xinfo) {
 	//// Add stuff to paint to the display list
@@ -374,36 +420,30 @@ void eventLoop(XInfo &xinfo) {
 			switch( event.type ) {
 				case KeyRelease:
 					handleKeyPress(xinfo, event);
-					//printf("Event: KeyRelease %d\n", event.type);
 					break;
 				case MotionNotify:
 					handleMotion(xinfo, event, inside);
-					//printf("Event: MotionNotify %d\n", event.type);
 					break;
 				case EnterNotify:
 					inside = 1;
-					//printf("Event: EnterNotify %d\n", event.type);
 					break;
 				case LeaveNotify:
 					inside = 0;
-					//printf("Event: LeaveNotify %d\n", event.type);
 					break;
 				case ConfigureNotify:
-					//printf("Event: Expose %d\n", event.type);
 					handleResize(xinfo, event);
 					break;
 			}
 		}
 
 		unsigned long currentTime = now();
-		//// Paint splash screen once
-		if (splashPainted == 0) {
-			repaint(xinfo);
-			splashPainted = 1;
-		} else if (splash == 0) {
-			//// Repaint when more than 1/30 seconds have passed
-			if ((currentTime - lastRepaint) >= (1000000/FPS)) {
-				usleep(1000000/FPS);
+		//// Repaint when more than 1/30 seconds have passed
+		if ((currentTime - lastRepaint) >= (1000000/FPS)) {
+			usleep(1000000/FPS);
+			if (splashPainted == 0) {
+				splashPaint(xinfo);
+				splashPainted = 1;
+			} else if (splash == 0) {
 				handleAnimation(xinfo, inside);
 				repaint(xinfo);
 			}
@@ -427,6 +467,7 @@ void eventLoop(XInfo &xinfo) {
 int main ( int argc, char *argv[] ) {
 	XInfo xinfo;
 	initX(argc, argv, xinfo);
+	printf("Loading window...\n");
 	eventLoop(xinfo);
 	XCloseDisplay(xinfo.display);
 }

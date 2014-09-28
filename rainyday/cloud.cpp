@@ -11,7 +11,7 @@ void Cloud::paint(XInfo &xinfo) {
 	}
 	for (int i=0; i < xinfo.width; i++) {
 		XFillArc(xinfo.display, xinfo.pixmap, xinfo.gc[0],
-			x+(i*100), y-100, 150, 150, 0, 360*64);
+			x+(i*100 + 1), y-101, 149, 149, 0, 360*64);
 	}
 }
 
